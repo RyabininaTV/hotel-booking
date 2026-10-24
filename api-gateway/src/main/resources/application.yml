@@ -1,0 +1,49 @@
+server:
+  port: ${PORT:8080}
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: false
+          routes:
+            - id: booking-openapi
+              uri: lb://booking-service
+              predicates:
+                - Path=/api/openapi/booking,/api/openapi/booking/**
+              filters:
+                - RewritePath=/api/openapi/booking(?<segment>.*), /v3/api-docs$\{segment}
+            - id: hotel-openapi
+              uri: lb://hotel-service
+              predicates:
+                - Path=/api/openapi/hotels,/api/openapi/hotels/**
+              filters:
+                - RewritePath=/api/openapi/hotels(?<segment>.*), /v3/api-docs$\{segment}
+            - id: booking-service
+              uri: lb://booking-service
+              predicates:
+                - Path=/api/booking,/api/booking/**,/api/bookings/**,/api/user/**
+            - id: hotel-service
+              uri: lb://hotel-service
+              predicates:
+                - Path=/api/hotels/**,/api/rooms/**
+eureka:
+  client:
+    registry-fetch-interval-seconds: 5
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    healthcheck:
+      enabled: true
+app:
+  jwt:
+    secret: ${JWT_SECRET:${SESSION_SECRET:local-development-only-secret-change-me-2026}}
+management:
+  endpoints:
+    web:
+      base-path: /api/actuator
+      exposure:
+        include: health,info,gateway
